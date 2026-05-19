@@ -1,0 +1,267 @@
+---
+title: "Recombination_Analysis"
+output: html_document
+date: "2025-10-17"
+---
+
+```{r}
+# Clean environment
+rm( list = ls() )
+
+# load libraries
+library(stringr)
+library(tidyverse)
+library(ggplot2)
+library(ape)
+library(phytools)
+library(ggtree)
+library(khroma)
+library(cartography)
+library(ggnewscale)
+
+# set path 
+path <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/inputs/"
+outpath <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/outputs/"
+  
+# Load metadata SCs
+SCs <- read.csv(paste0(path, "typing/SC.csv")) |> rename(Sample=Taxon, SC=Cluster)
+
+# Load Branch statistics
+recomb_predictions <- read.gff(paste0(path, "gubbins/recombination_predictions.gff"), na.strings = c(".", "?"), GFF3 = TRUE)
+  
+# Get accessory regions from Missingness proportion 
+Missingness_Prop <- read.delim(paste0(path, "Missingness_Prop.txt"), header=F, sep=" ")
+Accesory_region_POS <- Missingness_Prop |> filter(V2>=0.05) |> pull(V1)
+Core_region_POS <- Missingness_Prop |> filter(V2<0.05) |> pull(V1)
+
+# Get cps locus
+cps_POS <- 1193391:1209001
+
+
+# merge consecutive positions into ranges
+get_ranges <- function(pos) {
+  if (length(pos) == 0) return(data.frame(start=integer(), end=integer()))
+  pos <- sort(pos)
+  split <- c(0, cumsum(diff(pos) != 1))
+  do.call(rbind, lapply(split(pos, split), function(x) data.frame(start=min(x), end=max(x))))
+}
+
+# Preparing shading data
+accessory_df <- get_ranges(Accesory_region_POS)
+cps_df <- get_ranges(cps_POS)
+accessory_df$region_type <- "Accessory region"
+cps_df$region_type <- "cps locus"
+shaded_regions <- bind_rows(accessory_df, cps_df)
+shaded_regions <- shaded_regions %>%
+  mutate(alpha = ifelse(region_type == "Accessory region", 0.2, 1))
+
+# Load phenotypes
+phenotypes <- read.table(paste0(path, "phenotypes.txt"), header=T)
+phenotypes <- phenotypes |>
+  rename(Sample =samples ) |> 
+  mutate(Age_cat = ifelse(continuous<=7, "EOD", 
+                          ifelse(continuous<=89, "LOD", "VLOD")))
+
+# Prep metadata for tree
+fewer5_SC <- which(table(SCs$SC)<=7)
+metadata_tree <- SCs |>
+  mutate(SC2= ifelse(SC %in% fewer5_SC, "other", SC))|>
+  mutate(SC2= factor(SC2, level=c(1:12, "other")))|> 
+  rename("label" = "Sample")
+
+
+# Prepare colors for phylo
+SC_colors <- c("#dbdb8d", "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd","#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#f7b6d2",  "black")
+names(SC_colors) <- c(1:12, "other")
+
+```
+
+# recombination-containing full tree
+```{r}
+# Load recombination-free tree
+Fasttree <- read.tree(paste0(path, "phylogenies/Fastree_DP.tre"))
+Fasttree_mid <- midpoint.root(Fasttree)
+
+# Join metadata and tree 
+Fasttree_mid_metadata <- full_join(keep.tip(Fasttree_mid, metadata_tree$label), metadata_tree , by = 'label')
+Fasttree_mid_Nsub <- Fasttree_mid
+Fasttree_mid_Nsub$edge.length <- Fasttree_mid$edge.length*2231314
+Fasttree_mid_Nsub_metadata <- full_join(keep.tip(Fasttree_mid_Nsub, metadata_tree$label), metadata_tree , by = 'label')
+
+# SC tips
+# Scale: Number of substitutions 
+Fasttre_full_sp_pscale_Nsub <- ggtree(Fasttree_mid_Nsub_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)+ 
+  geom_treescale(x=0, y=1400, width=2000, color='red', fontsize=6, linesize=2, offset=20)
+Fasttre_full_sp_pscale_Nsub
+```
+
+# recombination-free full tree
+```{r}
+# Load recombination-free tree
+Gubbins_tree <- read.tree(paste0(path, "gubbins/recombination_free.tre"))
+Gubbins_tree_mid <- midpoint.root(Gubbins_tree)
+
+# Join metadata and tree 
+Gubbins_tree_mid_metadata <- full_join(keep.tip(Gubbins_tree_mid, metadata_tree$label), metadata_tree , by = 'label')
+Gubbins_tree_mid_Nsub  <- Gubbins_tree_mid
+Gubbins_tree_mid_Nsub$edge.length  <- Gubbins_tree_mid$edge.length/2231314
+Gubbins_tree_mid_metadata_Nsub  <- full_join(keep.tip(Gubbins_tree_mid_Nsub, metadata_tree$label), metadata_tree , by = 'label')
+
+# SC tips
+# Scale: Number of substitutions 
+Gubbins_tree_p1 <- ggtree(Gubbins_tree_mid_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)+ 
+  geom_treescale(x=0, y=1400, width=2000, color='red', fontsize=6, linesize=2, offset=20)
+Gubbins_tree_p1
+```
+
+FIGURE - Panel of Phylogenies
+```{r}
+
+library(patchwork)
+
+all_plots <- list(Fasttre_full_sp_pscale_Nsub + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) + 
+                    ggtitle("FastTree DP\nWhole-genome Phylogeny\n(With Recombination)"), 
+                  Gubbins_tree_p1 + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) +
+                    ggtitle("FastTree DP\nWhole-genome Phylogeny\nRecombination-free"))
+
+combined_panel <- wrap_plots(all_plots, ncol = 2, nrow = 1)
+
+
+library(cowplot)
+library(ggpubr)
+
+# Add legend at the bottom
+p1_with_legend <- Fasttre_full_sp_pscale_Nsub + theme(legend.position = "bottom",
+           legend.direction = "horizontal",
+           legend.box = "horizontal",
+           legend.text = element_text(size = 15),
+           legend.title = element_text(size = 15)) +
+    guides(color = guide_legend(nrow = 2, override.aes = list(size = 5)))
+
+# Extract legend
+legend <- as_ggplot(get_legend(p1_with_legend))
+
+# Display legend as its own plot
+combined_panel2 <- combined_panel / legend + plot_layout(heights = c(4, 1))
+combined_panel2
+
+ggsave(paste0(outpath, "Recombination_Phylogeny_panel.png"), combined_panel2, width = 15, height = 10, dpi = 300)
+ggsave(paste0(outpath, "Recombination_Phylogeny_panel.tiff"), combined_panel2, width = 15, height = 10, dpi = 300)
+
+```
+
+# Get Recombination to point mutation rate
+## Aligned to a single same REF (APO)
+```{r}
+# Load Branch statistics
+Fulltree_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_fulltree.per_branch_statistics.csv"))
+SC1_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC1_out.per_branch_statistics.csv"))
+SC2_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC2_out.per_branch_statistics.csv"))
+SC3_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC3_out.per_branch_statistics.csv"))
+SC4_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC4_out.per_branch_statistics.csv"))
+SC5_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC5_out.per_branch_statistics.csv"))
+SC6_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC6_out.per_branch_statistics.csv"))
+SC7_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC7_out.per_branch_statistics.csv"))
+SC8_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC8_out.per_branch_statistics.csv"))
+SC9_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC9_out.per_branch_statistics.csv"))
+SC10_branch_stats <-  read.delim(paste0(path, "gubbins/gubbins_SC10_out.per_branch_statistics.csv"))
+
+# Overall  r.m 
+# r.m = Number.of.SNPs.Inside.Recombinations/Number.of.SNPs.Outside.Recombination
+r.m_calc <- function(data){
+  round(sum(data$Number.of.SNPs.Inside.Recombinations)/sum(data$Number.of.SNPs.Outside.Recombination), 2)
+}
+Fulltree_r.m <- r.m_calc(Fulltree_branch_stats)
+SC1_r.m <- r.m_calc(SC1_branch_stats)
+SC2_r.m <- r.m_calc(SC2_branch_stats)
+SC3_r.m <- r.m_calc(SC3_branch_stats)
+SC4_r.m <- r.m_calc(SC4_branch_stats)
+SC5_r.m <- r.m_calc(SC5_branch_stats)
+SC6_r.m <- r.m_calc(SC6_branch_stats)
+SC7_r.m <- r.m_calc(SC7_branch_stats)
+SC8_r.m <-  r.m_calc(SC8_branch_stats)
+SC9_r.m <-  r.m_calc(SC9_branch_stats)
+SC10_r.m <- r.m_calc(SC10_branch_stats)
+
+# Overall  rho.theta 
+# rho.theta = Number.of.Recombination.Blocks/Number.of.SNPs.Outside.Recombination
+rho.theta_calc <- function(data){
+  round(sum(data$Number.of.Recombination.Blocks)/sum(data$Number.of.SNPs.Outside.Recombination), 2)
+}
+Fulltree_rho.theta <- rho.theta_calc(Fulltree_branch_stats)
+SC1_rho.theta <- rho.theta_calc(SC1_branch_stats)
+SC2_rho.theta <- rho.theta_calc(SC2_branch_stats)
+SC3_rho.theta <- rho.theta_calc(SC3_branch_stats)
+SC4_rho.theta <- rho.theta_calc(SC4_branch_stats)
+SC5_rho.theta <- rho.theta_calc(SC5_branch_stats)
+SC6_rho.theta <- rho.theta_calc(SC6_branch_stats)
+SC7_rho.theta <- rho.theta_calc(SC7_branch_stats)
+SC8_rho.theta <-  rho.theta_calc(SC8_branch_stats)
+SC9_rho.theta <-  rho.theta_calc(SC9_branch_stats)
+SC10_rho.theta <- rho.theta_calc(SC10_branch_stats)
+
+# Put results together
+df_r.m_rho.theta <- data.frame(SC = c("Fulltree", paste0("SC", 1:10)), 
+           r.m = c(Fulltree_r.m, SC1_r.m,SC2_r.m,SC3_r.m,SC4_r.m,SC5_r.m,SC6_r.m,SC7_r.m,SC8_r.m,SC9_r.m,SC10_r.m), 
+           rho.theta = c(Fulltree_rho.theta,SC1_rho.theta,SC2_rho.theta,SC3_rho.theta,SC4_rho.theta,SC5_rho.theta,SC6_rho.theta,SC7_rho.theta,SC8_rho.theta,SC9_rho.theta,SC10_rho.theta))
+df_r.m_rho.theta
+```
+
+
+
+## Each SC aligned to specific REF
+```{r}
+# Load Branch statistics
+SC1_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC1_out.per_branch_statistics.csv"))
+SC2_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC2_out.per_branch_statistics.csv"))
+SC3_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC3_out.per_branch_statistics.csv"))
+SC4_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC4_out.per_branch_statistics.csv"))
+SC5_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC5_out.per_branch_statistics.csv"))
+SC6_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC6_out.per_branch_statistics.csv"))
+SC7_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC7_out.per_branch_statistics.csv"))
+SC8_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC8_out.per_branch_statistics.csv"))
+SC9_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC9_out.per_branch_statistics.csv"))
+SC10_branch_stats_REFd <-  read.delim(paste0(path, "gubbins/gubbins_REFd_SC10_out.per_branch_statistics.csv"))
+
+# Overall  r.m 
+# r.m = Number.of.SNPs.Inside.Recombinations/Number.of.SNPs.Outside.Recombination
+SC1_r.m_REFd <- r.m_calc(SC1_branch_stats_REFd)
+SC2_r.m_REFd <- r.m_calc(SC2_branch_stats_REFd)
+SC3_r.m_REFd <- r.m_calc(SC3_branch_stats_REFd)
+SC4_r.m_REFd <- r.m_calc(SC4_branch_stats_REFd)
+SC5_r.m_REFd <- r.m_calc(SC5_branch_stats_REFd)
+SC6_r.m_REFd <- r.m_calc(SC6_branch_stats_REFd)
+SC7_r.m_REFd <- r.m_calc(SC7_branch_stats_REFd)
+SC8_r.m_REFd <-  r.m_calc(SC8_branch_stats_REFd)
+SC9_r.m_REFd <-  r.m_calc(SC9_branch_stats_REFd)
+SC10_r.m_REFd <- r.m_calc(SC10_branch_stats_REFd)
+
+# Overall  rho.theta 
+# rho.theta = Number.of.Recombination.Blocks/Number.of.SNPs.Outside.Recombination
+SC1_rho.theta_REFd <- rho.theta_calc(SC1_branch_stats_REFd)
+SC2_rho.theta_REFd <- rho.theta_calc(SC2_branch_stats_REFd)
+SC3_rho.theta_REFd <- rho.theta_calc(SC3_branch_stats_REFd)
+SC4_rho.theta_REFd <- rho.theta_calc(SC4_branch_stats_REFd)
+SC5_rho.theta_REFd <- rho.theta_calc(SC5_branch_stats_REFd)
+SC6_rho.theta_REFd <- rho.theta_calc(SC6_branch_stats_REFd)
+SC7_rho.theta_REFd <- rho.theta_calc(SC7_branch_stats_REFd)
+SC8_rho.theta_REFd <-  rho.theta_calc(SC8_branch_stats_REFd)
+SC9_rho.theta_REFd <-  rho.theta_calc(SC9_branch_stats_REFd)
+SC10_rho.theta_REFd <- rho.theta_calc(SC10_branch_stats_REFd)
+
+# Put results together
+df_r.m_rho.theta_REFd <- data.frame(SC = c("Fulltree", paste0("SC", 1:10)), 
+           r.m = c(NA, SC1_r.m_REFd,SC2_r.m_REFd,SC3_r.m_REFd,SC4_r.m_REFd,SC5_r.m_REFd,SC6_r.m_REFd,SC7_r.m_REFd,SC8_r.m_REFd,SC9_r.m_REFd,SC10_r.m_REFd), 
+           rho.theta = c(NA,SC1_rho.theta_REFd,SC2_rho.theta_REFd,SC3_rho.theta_REFd,SC4_rho.theta_REFd,SC5_rho.theta_REFd,SC6_rho.theta_REFd,SC7_rho.theta_REFd,SC8_rho.theta_REFd,SC9_rho.theta_REFd,SC10_rho.theta_REFd))
+df_r.m_rho.theta_REFd
+```
+
+

@@ -1,0 +1,210 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-14"
+---
+
+# Set up environment and load data 
+```{r}
+# Clean environment
+rm( list = ls() )
+
+# Load libraries
+library(tidyverse)
+library(phytools)
+library(ape)
+library(treeio)
+library(ggtree)
+library(ggplot2)
+library(ggnewscale)
+library(RColorBrewer)
+library(cartography)
+library(khroma)
+library(treeio)
+
+# set path 
+path <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/inputs/"
+outpath <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/outputs/"
+  
+# Import tree
+RAxML_core_tree <- read.tree(paste0(path, "phylogenies/raxml.tre"))
+RAxML_core_tree_mid <- midpoint.root(RAxML_core_tree)
+Fasttree_full_tree <- read.tree(paste0(path, "phylogenies/Fastree_SP.tre"))
+Fasttree_full_tree_mid <- midpoint.root(Fasttree_full_tree)
+Fasttree_full_tree_DP <- read.tree(paste0(path, "phylogenies/Fastree_DP.tre"))
+Fasttree_full_tree_DP_mid <- midpoint.root(Fasttree_full_tree_DP)
+IQtree_core_tree <- read.tree(paste0(path, "phylogenies/IQtree.tre"))
+IQtree_core_tree_mid <- midpoint.root(IQtree_core_tree)
+
+# Load metadata
+serotypes <- read.table(paste0(path,"typing/Serotypes.txt"), header=T)
+CCs <- read.csv(paste0(path,"typing/CC.txt"))
+SCs <- read.csv(paste0(path,"typing/SC.csv")) |> rename(Sample=Taxon, SC=Cluster)
+typing_data <- left_join(left_join(serotypes, CCs), SCs)
+
+# Prep metadata for tree
+fewer5_SC <- which(table(typing_data$SC)<=5)
+metadata_tree_v0 <- typing_data |>
+  mutate(SC2= ifelse(SC %in% fewer5_SC, "other", SC))|>
+  mutate(SC2= factor(SC2, level=c(1:12, "other")))|>
+  mutate(Serotype2 = str_remove(str_remove(GBS.SBG,"\\*"),"\\?"))|>
+  mutate(Serotype2 = ifelse(grepl("III-", Serotype2), "III", Serotype2))|>
+  mutate(Serotype2 = factor(Serotype2, levels=c("Ia", "Ib","II", "III", "IV", "V","VI", "VIII")))|> 
+  rename("label" = "Sample")|> 
+  filter(label %in% RAxML_core_tree_mid$tip.label)
+
+# Join metadata and tree 
+RAxML_core_tree_mid_metadata <- full_join(keep.tip(RAxML_core_tree_mid, metadata_tree_v0$label), metadata_tree_v0 , by = 'label')
+Fasttree_full_tree_mid_metadata <- full_join(keep.tip(Fasttree_full_tree_mid, metadata_tree_v0$label), metadata_tree_v0 , by = 'label')
+Fasttree_full_tree_DP_mid_metadata <- full_join(keep.tip(Fasttree_full_tree_DP_mid, metadata_tree_v0$label), metadata_tree_v0 , by = 'label')
+IQtree_core_tree_mid_metadata <- full_join(keep.tip(IQtree_core_tree_mid, metadata_tree_v0$label), metadata_tree_v0 , by = 'label')
+
+# Prepare heatmap data for phylo
+## Serotype
+Metadata_Serotype = metadata_tree_v0 |> select(Serotype2)
+row.names(Metadata_Serotype) <-  metadata_tree_v0$label
+colnames(Metadata_Serotype)= c("1")
+## CC
+Metadata_CC= metadata_tree_v0 |> select(clonal_complex)
+row.names(Metadata_CC) <-  metadata_tree_v0$label
+colnames(Metadata_CC)= c("2")
+
+# Prepare colors for phylo
+SC_colors <- c("#dbdb8d", "#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd","#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf", "#f7b6d2",  "#c5b0d5", "#c49c94", "black")
+Serotype_colors <- c(color("muted")(9),"#D55E00" , "grey")
+names(Serotype_colors) <- levels(Metadata_Serotype[,1])
+CC_colors <- carto.pal(pal1 = "pastel.pal" ,n1 = 12)
+```
+
+
+# Plot RAxML core aln tree
+```{r}
+# SC tips
+p1 <- ggtree(RAxML_core_tree_mid_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)
+p1
+# Serotype
+p2 <- gheatmap(p1 + new_scale_fill(), Metadata_Serotype ,  width=0.15, offset=0.0001, 
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = Serotype_colors, name="1: Serotype")
+
+# CCs
+p3 <- gheatmap(p2 + new_scale_fill(), Metadata_CC,  width=0.15, offset=0.0002,
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = CC_colors, name="2: CC")
+
+p3
+```
+# Plot IQtree core aln tree
+```{r}
+# SC tips
+IQtree_p1 <- ggtree(IQtree_core_tree_mid_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)
+IQtree_p1
+# Serotype
+IQtree_p2 <- gheatmap(IQtree_p1 + new_scale_fill(), Metadata_Serotype ,  width=0.15, offset=0.0001, 
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = Serotype_colors, name="1: Serotype")
+
+# CCs
+IQtree_p3 <- gheatmap(IQtree_p2 + new_scale_fill(), Metadata_CC,  width=0.15, offset=0.003,
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = CC_colors, name="2: CC")
+
+IQtree_p3
+
+```
+
+# Plot Fasttre full aln tree (single precision)
+```{r}
+# SC tips
+Fasttre_full_sp_p1 <- ggtree(Fasttree_full_tree_mid_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)
+
+Fasttre_full_sp_p1
+
+# Serotype
+Fasttre_full_sp_p2 <- gheatmap(Fasttre_full_sp_p1 + new_scale_fill(), Metadata_Serotype ,  width=0.15, offset=0.0005, 
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = Serotype_colors, name="1: Serotype")
+
+# CCs
+Fasttre_full_sp_p3 <- gheatmap(Fasttre_full_sp_p2 + new_scale_fill(), Metadata_CC,  width=0.15, offset=0.0015,
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = CC_colors, name="2: CC")
+
+Fasttre_full_sp_p3
+
+```
+
+# Plot Fasttre full aln tree (double precision)
+```{r}
+# SC tips
+Fasttre_full_dp_p1 <- ggtree(Fasttree_full_tree_DP_mid_metadata, ladderize = T, lwd=0.1) + 
+  geom_tippoint(aes(color=as.factor(SC2)),size=1.5)+
+  scale_colour_manual(name="SC", values=SC_colors)
+Fasttre_full_dp_p1
+# Serotype
+Fasttre_full_dp_p2 <- gheatmap(Fasttre_full_dp_p1 + new_scale_fill(), Metadata_Serotype ,  width=0.15, offset=0.005, 
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = Serotype_colors, name="1: Serotype")
+
+# CCs
+Fasttre_full_dp_p3 <- gheatmap(Fasttre_full_dp_p2 + new_scale_fill(), Metadata_CC,  width=0.15, offset=0.01,
+               font.size = 5, colnames_offset_y = -10, color=NA)+
+  scale_fill_manual(values = CC_colors, name="2: CC")
+
+Fasttre_full_dp_p3
+
+```
+
+FIGURE - Panel of Phylogenies
+```{r}
+
+library(patchwork)
+
+all_plots <- list(p1 + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) + 
+                    ggtitle("RaxML\nSNP-Phylogeny"), 
+                  IQtree_p1 + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) +
+                    ggtitle("IQ-tree\nSNP-Phylogeny"), 
+                  Fasttre_full_sp_p1 + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) +
+                    ggtitle("FastTree SP\nWhole-genome Phylogeny"), 
+                  Fasttre_full_dp_p1 + 
+                    theme(legend.position = "none", 
+                          plot.title = element_text(hjust = 0.5, size = 20, face = "bold")) +
+                    ggtitle("FastTree DP\nWhole-genome Phylogeny"))
+
+combined_panel <- wrap_plots(all_plots, ncol = 2, nrow = 2)
+
+library(cowplot)
+library(ggpubr)
+
+# Add legend at the bottom
+p1_with_legend <- p1 + theme(legend.position = "bottom",
+           legend.direction = "horizontal",
+           legend.box = "horizontal",
+           legend.text = element_text(size = 15),
+           legend.title = element_text(size = 15)) +
+    guides(color = guide_legend(nrow = 2, override.aes = list(size = 5)))
+
+# Extract legend
+legend <- as_ggplot(get_legend(p1_with_legend))
+
+# Display legend as its own plot
+combined_panel2 <- combined_panel / legend + plot_layout(heights = c(4, 1))
+combined_panel2
+
+ggsave(paste0(outpath,"Phylogeny_panel.png"), combined_panel2, width = 10, height = 15, dpi = 300)
+ggsave(paste0(outpath,"Phylogeny_panel.tiff"), combined_panel2, width = 10, height = 15, dpi = 300)
+
+```
+

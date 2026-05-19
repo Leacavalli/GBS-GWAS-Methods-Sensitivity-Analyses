@@ -1,0 +1,1233 @@
+---
+title: "Main Analysis"
+output: html_document
+date: "2025-07-17"
+---
+
+# 0 Set up environment
+```{r}
+# Clean environment
+rm( list = ls() )
+
+# set path 
+path <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/inputs/"
+outpath <- "~/GitHub/GBS-GWAS-Methods-Sensitivity-Analyses/Empirical Analysis/outputs/"
+  
+
+# load libraries
+library(qqman)
+library(circlize)
+library(VennDiagram)
+library(stringr)
+library(tidyverse)
+library(ggrepel)
+library(ggplot2)
+
+# Prepare Plotting functions 
+QQ_plot <- function(data, type){
+  df <- data.frame(expected= (-log10(ppoints(length(data |> pull(lrt.pvalue))))), 
+                             observed=(-log10(sort(data |> pull(lrt.pvalue))))) 
+  df |>
+    ggplot(aes(x = expected, y = observed)) +
+  geom_point() +
+  geom_abline(slope = 1, color="red", lty="dashed")  +      
+  labs(
+    x = "-log10(Expected P)",
+    y = "-log10(Observed P)",
+    title = paste0(type," QQ plot")
+  ) +
+  theme_minimal()+
+   ylim(0, max(c(df$expected, df$observed)))+
+   xlim(0, max(c(df$expected, df$observed)))+ 
+    ggtitle("")
+}
+
+# Load table
+Missingness_Prop <- read.delim(paste0(path,"Missingness_Prop.txt"), header=F, sep=" ")
+colnames(Missingness_Prop) <- c("POS", "Missingness_Proportion")
+```
+
+# 1. SENSITIVTY ANALYSIS : POPULATION STRUCTURE CORRECTION METHODS
+
+# 1.1. CC
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_CC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/CC/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_CC_sighits <- SNPGWAS_CC_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_CC_data)) 
+# QQ plot 
+SNPGWAS_CC_qqplot <- QQ_plot(SNPGWAS_CC_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_CC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/CC/DBGWAS.txt"), sep = "\t", header=T) |>  
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_CC_sighits <- DBGWAS_CC_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_CC_qqplot <- QQ_plot(DBGWAS_CC_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_CC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/CC/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_CC_sighits <- PanGWAS_CC_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_CC_data)) 
+# QQ plot 
+PanGWAS_CC_qqplot <- QQ_plot(PanGWAS_CC_data, "PanGWAS")
+```
+# 1.2. SC
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_SC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SC/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_SC_sighits <- SNPGWAS_SC_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_SC_data)) 
+# QQ plot 
+SNPGWAS_SC_qqplot <- QQ_plot(SNPGWAS_SC_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_SC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SC/DBGWAS.txt"), sep = "\t", header=T) |>  
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_SC_sighits <- DBGWAS_SC_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_SC_qqplot <- QQ_plot(DBGWAS_SC_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_SC_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SC/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_SC_sighits <- PanGWAS_SC_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_SC_data)) 
+# QQ plot 
+PanGWAS_SC_qqplot <- QQ_plot(PanGWAS_SC_data, "PanGWAS")
+```
+
+# 1.3. mash_distances
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_mash_distances_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Mash_distances/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_mash_distances_sighits <- SNPGWAS_mash_distances_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_mash_distances_data)) 
+# QQ plot 
+SNPGWAS_mash_distances_qqplot <- QQ_plot(SNPGWAS_mash_distances_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_mash_distances_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Mash_distances/DBGWAS.txt"), sep = "\t", header=T) |>  
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_mash_distances_sighits <- DBGWAS_mash_distances_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_mash_distances_qqplot <- QQ_plot(DBGWAS_mash_distances_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_mash_distances_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Mash_distances/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_mash_distances_sighits <- PanGWAS_mash_distances_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_mash_distances_data)) 
+# QQ plot 
+PanGWAS_mash_distances_qqplot <- QQ_plot(PanGWAS_mash_distances_data, "PanGWAS")
+```
+
+# 1.4. SNP_kinship
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_SNP_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SNP_kinship/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_SNP_kinship_sighits <- SNPGWAS_SNP_kinship_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_SNP_kinship_data)) 
+# QQ plot 
+SNPGWAS_SNP_kinship_qqplot <- QQ_plot(SNPGWAS_SNP_kinship_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_SNP_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SNP_kinship/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_SNP_kinship_sighits <- DBGWAS_SNP_kinship_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_SNP_kinship_qqplot <- QQ_plot(DBGWAS_SNP_kinship_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_SNP_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/SNP_kinship/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_SNP_kinship_sighits <- PanGWAS_SNP_kinship_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_SNP_kinship_data)) 
+# QQ plot 
+PanGWAS_SNP_kinship_qqplot <- QQ_plot(PanGWAS_SNP_kinship_data, "PanGWAS")
+```
+
+# 1.5. Unitig_kinship
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_Unitig_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Unitig_kinship/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_Unitig_kinship_sighits <- SNPGWAS_Unitig_kinship_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_Unitig_kinship_data)) 
+# QQ plot 
+SNPGWAS_Unitig_kinship_qqplot <- QQ_plot(SNPGWAS_Unitig_kinship_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_Unitig_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Unitig_kinship/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_Unitig_kinship_sighits <- DBGWAS_Unitig_kinship_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_Unitig_kinship_qqplot <- QQ_plot(DBGWAS_Unitig_kinship_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_Unitig_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Unitig_kinship/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_Unitig_kinship_sighits <- PanGWAS_Unitig_kinship_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Unitig_kinship_data)) 
+# QQ plot 
+PanGWAS_Unitig_kinship_qqplot <- QQ_plot(PanGWAS_Unitig_kinship_data, "PanGWAS")
+```
+
+# 1.6. COG_kinship
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_COG_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/COG_kinship/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_COG_kinship_sighits <- SNPGWAS_COG_kinship_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_COG_kinship_data)) 
+# QQ plot 
+SNPGWAS_COG_kinship_qqplot <- QQ_plot(SNPGWAS_COG_kinship_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_COG_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/COG_kinship/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_COG_kinship_sighits <- DBGWAS_COG_kinship_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_COG_kinship_qqplot <- QQ_plot(DBGWAS_COG_kinship_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_COG_kinship_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/COG_kinship/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_COG_kinship_sighits <- PanGWAS_COG_kinship_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_COG_kinship_data)) 
+# QQ plot 
+PanGWAS_COG_kinship_qqplot <- QQ_plot(PanGWAS_COG_kinship_data, "PanGWAS")
+```
+
+# 1.7. RAxML
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_RAxML_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/RAxML/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_RAxML_sighits <- SNPGWAS_RAxML_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_RAxML_data)) 
+# QQ plot 
+SNPGWAS_RAxML_qqplot <- QQ_plot(SNPGWAS_RAxML_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_RAxML_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/RAxML/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_RAxML_sighits <- DBGWAS_RAxML_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_RAxML_qqplot <- QQ_plot(DBGWAS_RAxML_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_RAxML_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/RAxML/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_RAxML_sighits <- PanGWAS_RAxML_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_RAxML_data)) 
+# QQ plot 
+PanGWAS_RAxML_qqplot <- QQ_plot(PanGWAS_RAxML_data, "PanGWAS")
+```
+
+
+# 1.8. IQtree
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_IQtree_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/IQtree/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_IQtree_sighits <- SNPGWAS_IQtree_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_IQtree_data)) 
+# QQ plot 
+SNPGWAS_IQtree_qqplot <- QQ_plot(SNPGWAS_IQtree_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_IQtree_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/IQtree/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_IQtree_sighits <- DBGWAS_IQtree_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_IQtree_qqplot <- QQ_plot(DBGWAS_IQtree_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_IQtree_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/IQtree/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_IQtree_sighits <- PanGWAS_IQtree_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_IQtree_data)) 
+# QQ plot 
+PanGWAS_IQtree_qqplot <- QQ_plot(PanGWAS_IQtree_data, "PanGWAS")
+```
+
+# 1.9. Fastree SP
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_Fasttree_SP_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_SP/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_Fasttree_SP_sighits <- SNPGWAS_Fasttree_SP_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_Fasttree_SP_data)) 
+# QQ plot 
+SNPGWAS_Fasttree_SP_qqplot <- QQ_plot(SNPGWAS_Fasttree_SP_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_Fasttree_SP_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_SP/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_Fasttree_SP_sighits <- DBGWAS_Fasttree_SP_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_Fasttree_SP_qqplot <- QQ_plot(DBGWAS_Fasttree_SP_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_Fasttree_SP_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_SP/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_Fasttree_SP_sighits <- PanGWAS_Fasttree_SP_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_SP_data)) 
+# QQ plot 
+PanGWAS_Fasttree_SP_qqplot <- QQ_plot(PanGWAS_Fasttree_SP_data, "PanGWAS")
+```
+# 1.10. Fastree DP FEM
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_Fasttree_DP_FEM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_FEM/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_Fasttree_DP_FEM_sighits <- SNPGWAS_Fasttree_DP_FEM_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_Fasttree_DP_FEM_data)) 
+# QQ plot 
+SNPGWAS_Fasttree_DP_FEM_qqplot <- QQ_plot(SNPGWAS_Fasttree_DP_FEM_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_Fasttree_DP_FEM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_FEM/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_Fasttree_DP_FEM_sighits <- DBGWAS_Fasttree_DP_FEM_data |> filter(lrt.pvalue < 0.05 /87899)  
+# QQ plot 
+DBGWAS_Fasttree_DP_FEM_qqplot <- QQ_plot(DBGWAS_Fasttree_DP_FEM_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_Fasttree_DP_FEM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_FEM/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_Fasttree_DP_FEM_sighits <- PanGWAS_Fasttree_DP_FEM_data |> filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_FEM_data)) 
+# QQ plot 
+PanGWAS_Fasttree_DP_FEM_qqplot <- QQ_plot(PanGWAS_Fasttree_DP_FEM_data, "PanGWAS")
+```
+# 1.11. Fastree DP LMM
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_Fasttree_DP_LMM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_LMM/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_Fasttree_DP_LMM_sighits <- SNPGWAS_Fasttree_DP_LMM_data |>  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_Fasttree_DP_LMM_data)) |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2))
+# QQ plot 
+SNPGWAS_Fasttree_DP_LMM_qqplot <- QQ_plot(SNPGWAS_Fasttree_DP_LMM_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_Fasttree_DP_LMM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_LMM/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_Fasttree_DP_LMM_sighits <- DBGWAS_Fasttree_DP_LMM_data |> 
+  filter(lrt.pvalue < 0.05 /87899)  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2))
+# QQ plot 
+DBGWAS_Fasttree_DP_LMM_qqplot <- QQ_plot(DBGWAS_Fasttree_DP_LMM_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_Fasttree_DP_LMM_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_LMM/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_Fasttree_DP_LMM_sighits <- PanGWAS_Fasttree_DP_LMM_data |> 
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_LMM_data)) |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  )
+# QQ plot 
+PanGWAS_Fasttree_DP_LMM_qqplot <- QQ_plot(PanGWAS_Fasttree_DP_LMM_data, "PanGWAS")
+```
+# 1.12. Fastree DP LMM - no recombination
+```{r}
+## SNP-GWAS
+# Load GWAS results
+SNPGWAS_Fasttree_DP_noRecombination_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_noRecombination/SNPGWAS.txt"), sep = "\t", header=T)|> 
+  filter(af>=0.05, af <0.95)
+# Significant hits
+SNPGWAS_Fasttree_DP_noRecombination_sighits <- SNPGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 /nrow(SNPGWAS_Fasttree_DP_noRecombination_data))  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  )
+# QQ plot 
+SNPGWAS_Fasttree_DP_noRecombination_qqplot <- QQ_plot(SNPGWAS_Fasttree_DP_noRecombination_data, "SNP-GWAS") 
+
+## DBGWAS
+# Load GWAS results
+DBGWAS_Fasttree_DP_noRecombination_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_noRecombination/DBGWAS.txt"), sep = "\t", header=T) |>
+  filter(af >=0.05, af <0.95)
+# Significant hits
+DBGWAS_Fasttree_DP_noRecombination_sighits <- DBGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 /87899)  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  )
+# QQ plot 
+DBGWAS_Fasttree_DP_noRecombination_qqplot <- QQ_plot(DBGWAS_Fasttree_DP_noRecombination_data, "DBGWAS")
+
+## PanGWAS
+# Load GWAS results
+PanGWAS_Fasttree_DP_noRecombination_data <- read.table(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_noRecombination/PanGWAS.txt"), sep = "\t", header=T) |> filter(af >=0.05, af <0.95)
+# Get significant hits
+PanGWAS_Fasttree_DP_noRecombination_sighits <- PanGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_noRecombination_data))  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  )
+# QQ plot 
+PanGWAS_Fasttree_DP_noRecombination_qqplot <- QQ_plot(PanGWAS_Fasttree_DP_noRecombination_data, "PanGWAS")
+```
+
+# 2. SENSITIVTY ANALYSIS : PANGENOME TOOLS
+## 2.1.Pan-GWAS : Roary
+```{r}
+# Load GWAS results
+PanGWAS_ROARY <- read.table(paste0(path,"pyseer/Pangenome_Methods/PanGWAS_ROARY.txt"), sep = "\t", header=T) |> 
+  filter(af >=0.05, af <0.95)
+
+# Get significant hits
+PanGWAS_ROARY_sig <- PanGWAS_ROARY |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_ROARY))  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  ) |>
+  select(variant, af, beta_CI, P_value)
+PanGWAS_ROARY_sig
+
+
+# QQ plot 
+PanGWAS_ROARY_qqplot <- QQ_plot(PanGWAS_ROARY, "PanGWAS")
+```
+## 2.2.Pan-GWAS : Panaroo+CLARC
+```{r}
+# Load GWAS results
+PanGWAS_PANAROO_CLARC <- read.table(paste0(path,"pyseer/Pangenome_Methods/PanGWAS_PANAROO_CLARC.txt"), sep = "\t", header=T) |> 
+  filter(af >=0.05, af <0.95)
+
+# Get significant hits
+PanGWAS_PANAROO_CLARC_sig <- PanGWAS_PANAROO_CLARC |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_PANAROO_CLARC))  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  ) |>
+  select(variant, af, beta_CI, P_value)
+PanGWAS_PANAROO_CLARC_sig
+
+# QQ plot 
+PanGWAS_PANAROO_CLARC_qqplot <- QQ_plot(PanGWAS_PANAROO_CLARC, "PanGWAS")
+```
+## 2.3.Pan-GWAS: Roary+CLARC
+```{r}
+# Load GWAS results
+PanGWAS_ROARY_CLARC <- read.table(paste0(path,"pyseer/Pangenome_Methods/PanGWAS_ROARY_CLARC.txt"), sep = "\t", header=T) |> 
+  filter(af >=0.05, af <0.95)
+
+# Get significant hits
+PanGWAS_ROARY_CLARC_sig <- PanGWAS_ROARY_CLARC |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_ROARY_CLARC))  |>
+  mutate(
+    beta_lower = (beta - 1.96 * beta.std.err),
+    beta_upper = (beta + 1.96 * beta.std.err),
+    beta_CI = sprintf("%.2f (%.2f; %.2f)", beta, beta_lower, beta_upper),
+    P_value = formatC(lrt.pvalue, format = "e", digits = 2)
+  ) |>
+  select(variant, af, beta_CI, P_value)
+PanGWAS_ROARY_CLARC_sig
+
+
+# QQ plot 
+PanGWAS_ROARY_CLARC_qqplot <- QQ_plot(PanGWAS_ROARY_CLARC, "PanGWAS")
+```
+# TABLE - PANGENOME TOOLS PYSEER RESULTS
+```{r}
+# sig level
+col_0 <- c("Panaroo",  "Panaroo+CLARC", "Roary", "Roary+CLARC")
+col_1 <- c(nrow(PanGWAS_Fasttree_DP_LMM_data), nrow(PanGWAS_PANAROO_CLARC), nrow(PanGWAS_ROARY), nrow(PanGWAS_ROARY_CLARC))
+col_2 <- 0.05/col_1
+col_3 <- c(nrow(PanGWAS_Fasttree_DP_LMM_sighits), nrow(PanGWAS_PANAROO_CLARC_sig), nrow(PanGWAS_ROARY_sig), nrow(PanGWAS_ROARY_CLARC_sig))
+
+# Col 4
+col_4 <- c(PanGWAS_Fasttree_DP_LMM_sighits |>  mutate(col4 = paste0(variant, ": af=", af, ", beta (95% CI): ", beta_CI, ", p-value=",P_value)) |> pull(col4)|> paste(collapse = "; "), 
+           "",
+           PanGWAS_ROARY_sig |>  mutate(col4 = paste0(variant, ": af=", af, ", beta (95% CI): ", beta_CI, ", p-value=",P_value))|> pull(col4) |> paste(collapse = "; "), 
+           "")
+
+
+data.frame(Pangenome_tool = col_0, 
+           N_Accessory_genes = col_1,
+           Sig_threshold = formatC(col_2, format = "e", digits = 2),
+           N_sig = col_3, 
+           Sig_hits= col_4)
+```
+
+
+
+## TABLE Lambda GC 
+```{r}
+### Lambda GC
+# Function
+lambdaGC_fun <- function(df){
+  # use the LRT p-values from pyseer
+p <- df$lrt.pvalue
+
+# drop NAs and p = 0 (if any)
+p <- p[!is.na(p) & p > 0]
+
+# convert p-values to chi-square statistics with 1 df
+chisq_obs <- qchisq(1 - p, df = 1)
+
+# genomic inflation factor lambda_GC
+lambda_gc <- median(chisq_obs) / qchisq(0.5, df = 1)
+
+round(lambda_gc,2)
+}
+
+
+### Arrange df
+lambdaGC_df <- data.frame(Method= c("CC", "SC", "Mash distances","SNP kinship", "Unitig kinship", "COG kinship",  "RAxML", "IQtree", "Fasttree SP", "Fasttree DP", "Fasttree DP", "Fasttree DP - no Recombination"), 
+           SNPGWAS_lambdaGC= c(lambdaGC_fun(SNPGWAS_CC_data),
+                            lambdaGC_fun(SNPGWAS_SC_data) , 
+                            lambdaGC_fun(SNPGWAS_mash_distances_data), 
+                            lambdaGC_fun(SNPGWAS_SNP_kinship_data), 
+                            lambdaGC_fun(SNPGWAS_Unitig_kinship_data), 
+                            lambdaGC_fun(SNPGWAS_COG_kinship_data),
+                            lambdaGC_fun(SNPGWAS_RAxML_data), 
+                            lambdaGC_fun(SNPGWAS_IQtree_data),
+                            lambdaGC_fun(SNPGWAS_Fasttree_SP_data) , 
+                            lambdaGC_fun(SNPGWAS_Fasttree_DP_FEM_data), 
+                            lambdaGC_fun(SNPGWAS_Fasttree_DP_LMM_data),
+                            lambdaGC_fun(SNPGWAS_Fasttree_DP_noRecombination_data)), 
+           
+           PanGWAS_lambdaGC= c(lambdaGC_fun(PanGWAS_CC_data),
+                           lambdaGC_fun(PanGWAS_SC_data) , 
+                           lambdaGC_fun(PanGWAS_mash_distances_data),
+                           lambdaGC_fun(PanGWAS_SNP_kinship_data) , 
+                           lambdaGC_fun(PanGWAS_Unitig_kinship_data) , 
+                           lambdaGC_fun(PanGWAS_COG_kinship_data), 
+                           lambdaGC_fun(PanGWAS_RAxML_data), 
+                           lambdaGC_fun(PanGWAS_IQtree_data) , 
+                           lambdaGC_fun(PanGWAS_Fasttree_SP_data) ,  
+                           lambdaGC_fun(PanGWAS_Fasttree_DP_FEM_data) ,
+                           lambdaGC_fun(PanGWAS_Fasttree_DP_LMM_data) , 
+                           lambdaGC_fun(PanGWAS_Fasttree_DP_noRecombination_data)), 
+           
+           DBGWAS_lambdaGC= c(lambdaGC_fun(DBGWAS_CC_data), 
+                            lambdaGC_fun(DBGWAS_SC_data) , 
+                            lambdaGC_fun(DBGWAS_mash_distances_data) ,
+                            lambdaGC_fun(DBGWAS_SNP_kinship_data) , 
+                            lambdaGC_fun(DBGWAS_Unitig_kinship_data), 
+                            lambdaGC_fun(DBGWAS_COG_kinship_data) , 
+                            lambdaGC_fun(DBGWAS_RAxML_data), 
+                            lambdaGC_fun(DBGWAS_IQtree_data),
+                            lambdaGC_fun(DBGWAS_Fasttree_SP_data) , 
+                            lambdaGC_fun(DBGWAS_Fasttree_DP_FEM_data),
+                            lambdaGC_fun(DBGWAS_Fasttree_DP_LMM_data),
+                            lambdaGC_fun(DBGWAS_Fasttree_DP_noRecombination_data) ))
+
+lambdaGC_df
+```
+
+# FIGURE QQ-PLOTs Panel (Figure 2)
+```{r}
+library(patchwork)
+
+all_plots <- list(SNPGWAS_CC_qqplot + annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[1,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_SC_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[2,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_mash_distances_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[3,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_SNP_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[4,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_Unitig_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[5,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_COG_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[6,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_RAxML_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[7,2])),  hjust = 1.1, vjust = -0.5,  size = 5),
+                  SNPGWAS_IQtree_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[8,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_Fasttree_SP_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[9,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_Fasttree_DP_FEM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[10,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_Fasttree_DP_LMM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[11,2])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  SNPGWAS_Fasttree_DP_noRecombination_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[12,2])),  hjust = 1.1, vjust = -0.5,  size = 5),
+                  
+                  DBGWAS_CC_qqplot + annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[1,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_SC_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[2,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_mash_distances_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[3,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_SNP_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[4,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_Unitig_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[5,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_COG_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[6,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_RAxML_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[7,3])),  hjust = 1.1, vjust = -0.5,  size = 5),
+                  DBGWAS_IQtree_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[8,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_Fasttree_SP_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[9,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_Fasttree_DP_FEM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[10,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_Fasttree_DP_LMM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[11,3])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  DBGWAS_Fasttree_DP_noRecombination_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[12,3])),  hjust = 1.1, vjust = -0.5,  size = 5),
+                  
+                  
+                  PanGWAS_CC_qqplot + annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[1,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_SC_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[2,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_mash_distances_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[3,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_SNP_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[4,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_Unitig_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[5,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_COG_kinship_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[6,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_RAxML_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[7,4])),  hjust = 1.1, vjust = -0.5,  size = 5),
+                  PanGWAS_IQtree_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[8,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_Fasttree_SP_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[9,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_Fasttree_DP_FEM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[10,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_Fasttree_DP_LMM_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[11,4])),  hjust = 1.1, vjust = -0.5,  size = 5), 
+                  PanGWAS_Fasttree_DP_noRecombination_qqplot+ annotate("text", x = Inf, y = -Inf, label = substitute(lambda*"GC = "*x, list(x = lambdaGC_df[12,4])),  hjust = 1.1, vjust = -0.5,  size = 5)
+                  )
+
+combined_panel <- wrap_plots(all_plots, ncol = 12, nrow = 3)
+
+# Define your 12 titles
+titles <- c("CC", "SC", "Mash\nDistances", 
+            "SNP\nKinship", "Unitig\nKinship", "COG\nKinship", 
+            "RAxML", "IQtree", 
+            "Fasttree SP", "Fasttree DP\n(FEM)", "Fasttree DP\n(LMM)", 
+            "Fasttree DP\n(Recombination-free)")
+
+# Create title plots
+title_plots <- lapply(titles, function(title) {
+  ggplot() + 
+    annotate("text", x = 0.5, y = 0.5, label = title, 
+             size = 5, hjust = 0.5, vjust = 0.5, fontface = "bold") +
+    theme_void()
+})
+
+# Combine titles into one row
+title_row <- wrap_plots(title_plots, ncol = 12)
+
+# Create left side labels
+row_labels <- c("SNP-GWAS", "DBGWAS", "PanGWAS")
+left_plots <- lapply(row_labels, function(label) {
+  ggplot() + 
+    annotate("text", x = 0.5, y = 0.5, label = label, 
+             size = 5, hjust = 0.5, vjust = 0.5, fontface = "bold",
+             angle = 90) +
+    theme_void()
+})
+
+# Left labels with placeholder for title area
+left_title_space <- ggplot() + theme_void()
+left_column <- left_title_space / wrap_plots(left_plots, ncol = 1, nrow = 3) + 
+  plot_layout(heights = c(1, 3))
+
+# Main panel
+main_column <- title_row / wrap_plots(all_plots, ncol = 12, nrow = 3) + 
+  plot_layout(heights = c(0.25, 3))
+
+# Combine horizontally
+combined_panel <- wrap_plots(list(left_column, main_column), ncol = 2, nrow = 1, widths = c(0.25, 12))
+
+
+ggsave(paste0(outpath, "QQplot_panel.png"), combined_panel, width = 30, height = 10, dpi = 300)
+ggsave(paste0(outpath, "QQplot_panel.tiff"), combined_panel, width = 30, height = 10, dpi = 300)
+
+```
+
+## TABLE Number of significant hits
+```{r}
+### Arrange df
+N_sig_hits_df <- data.frame(Method= c("CC", "SC", "Mash distances", "SNP kinship", "Unitig kinship", "COG kinship", "RAxML", "IQtree", "Fasttree SP", "Fasttree DP", "Fasttree DP", "Fasttree DP - no Recombination"), 
+           SNPGWAS_nhits= c(nrow(SNPGWAS_CC_sighits),
+                            nrow(SNPGWAS_SC_sighits) , 
+                            nrow(SNPGWAS_mash_distances_sighits),
+                            nrow(SNPGWAS_SNP_kinship_sighits), 
+                            nrow(SNPGWAS_Unitig_kinship_sighits), 
+                            nrow(SNPGWAS_COG_kinship_sighits), 
+                            nrow(SNPGWAS_RAxML_sighits), 
+                            nrow(SNPGWAS_IQtree_sighits),
+                            nrow(SNPGWAS_Fasttree_SP_sighits) , 
+                            nrow(SNPGWAS_Fasttree_DP_FEM_sighits), 
+                            nrow(SNPGWAS_Fasttree_DP_LMM_sighits),
+                            nrow(SNPGWAS_Fasttree_DP_noRecombination_sighits)), 
+           
+           DBGWAS_nhits= c(nrow(DBGWAS_CC_sighits), 
+                            nrow(DBGWAS_SC_sighits) , 
+                            nrow(DBGWAS_mash_distances_sighits)  ,
+                            nrow(DBGWAS_SNP_kinship_sighits) , 
+                            nrow(DBGWAS_Unitig_kinship_sighits), 
+                            nrow(DBGWAS_COG_kinship_sighits), 
+                            nrow(DBGWAS_RAxML_sighits), 
+                            nrow(DBGWAS_IQtree_sighits) , 
+                            nrow(DBGWAS_Fasttree_SP_sighits) , 
+                            nrow(DBGWAS_Fasttree_DP_FEM_sighits),
+                            nrow(DBGWAS_Fasttree_DP_LMM_sighits),
+                            nrow(DBGWAS_Fasttree_DP_noRecombination_sighits) ), 
+           
+           PanGWAS_nhits= c(nrow(PanGWAS_CC_sighits),
+                           nrow(PanGWAS_SC_sighits) , 
+                           nrow(PanGWAS_mash_distances_sighits),
+                           nrow(PanGWAS_SNP_kinship_sighits) , 
+                           nrow(PanGWAS_Unitig_kinship_sighits) , 
+                           nrow(PanGWAS_COG_kinship_sighits), 
+                           nrow(PanGWAS_RAxML_sighits) , 
+                           nrow(PanGWAS_IQtree_sighits) , 
+                           nrow(PanGWAS_Fasttree_SP_sighits) ,  
+                           nrow(PanGWAS_Fasttree_DP_FEM_sighits) ,
+                           nrow(PanGWAS_Fasttree_DP_LMM_sighits) , 
+                           nrow(PanGWAS_Fasttree_DP_noRecombination_sighits)))
+
+N_sig_hits_df 
+
+```
+
+# FIGURE - Correlation between lambdaGC and Number of Sig hits
+```{r}
+library(dplyr)
+library(ggplot2)
+library(broom)
+
+
+# Prepare data
+lambdaGC_df_long <- lambdaGC_df %>%
+  pivot_longer(
+    cols = -Method,
+    names_to = "GWAS_type",
+    values_to = "lambdaGC"
+  ) %>%
+  mutate(GWAS_type = str_replace(GWAS_type, "_lambdaGC", ""))
+
+N_sig_hits_df_long <- N_sig_hits_df %>%
+  pivot_longer(
+    cols = -Method,
+    names_to = "GWAS_type",
+    values_to = "nhits"
+  ) %>%
+  mutate(GWAS_type = str_replace(GWAS_type, "_nhits", ""))
+
+lambdaGC_Nsighits_df_long <- left_join(lambdaGC_df_long, N_sig_hits_df_long)
+
+# Get correlation
+corr_by_GWAS_type <- lambdaGC_Nsighits_df_long %>%
+  group_by(GWAS_type) %>%
+  reframe(tidy(cor.test(log10(nhits + 1), lambdaGC, method = "pearson"))) %>%
+  mutate(r_lab = round(estimate, 3),
+    p_lab = signif(p.value, 3),
+    label = paste0("r = ", r_lab, "\nP = ", p_lab))
+level_order <- c("SNPGWAS", "PanGWAS", "DBGWAS")
+corr_by_GWAS_type2 <- corr_by_GWAS_type %>%
+  mutate(GWAS_type = factor(GWAS_type, levels = level_order))
+
+# Plot
+plot_corr_lambdaGC_Nsighits <- lambdaGC_Nsighits_df_long  %>%
+  ggplot(aes(x = nhits + 1, y = lambdaGC, color = GWAS_type)) +
+  geom_point(size=5) +
+  facet_grid(. ~ GWAS_type) +
+  scale_x_log10() +
+  geom_hline(yintercept = 1, linetype = "dashed", color = "red") +
+  geom_text(
+    data = corr_by_GWAS_type2,
+    aes(
+      x = 15, y = Inf,
+      label = label
+    ),
+    inherit.aes = FALSE,
+    hjust = 1.1, vjust = 1.5,
+    size = 3.5
+  ) +
+  labs(x = "Number of significant hits (log10 scale)",
+    y = expression(lambda[GC]),
+    color = "GWAS type"
+  )+
+  scale_color_manual(values= c("lightblue", "darkred", "darkgreen")) +
+  theme_classic() +
+  theme(legend.position = "none")
+
+plot_corr_lambdaGC_Nsighits
+
+ggsave(paste0(outpath, "Correlation_lambdaGC_Nsighits.png"), plot_corr_lambdaGC_Nsighits, width = 10, height = 5, dpi = 300)
+ggsave(paste0(outpath, "Correlation_lambdaGC_Nsighits.tiff"), plot_corr_lambdaGC_Nsighits, width = 10, height = 5, dpi = 300)
+
+```
+
+# TABLE - significant results with and without RECOMBINATION
+```{r}
+# Recombination
+SNPGWAS_Fasttree_DP_LMM_sighits_df <- SNPGWAS_Fasttree_DP_LMM_sighits |> 
+  select(variant, af, beta_CI, P_value)|> 
+  mutate(POS= str_split(variant, "_", simplify = T)[,2], 
+         REF= str_split(variant, "_", simplify = T)[,3],
+         ALT= str_split(variant, "_", simplify = T)[,4], 
+         variant_new = paste0(REF, POS, ALT))
+  
+DBGWAS_Fasttree_DP_LMM_sighits_df <- DBGWAS_Fasttree_DP_LMM_sighits |> 
+  select(variant, af, beta_CI, P_value)|> 
+  mutate(variant_new = paste0("unitig_", 1:nrow(DBGWAS_Fasttree_DP_LMM_sighits)))
+ 
+PanGWAS_Fasttree_DP_LMM_sighits_df <-  PanGWAS_Fasttree_DP_LMM_sighits|> 
+  rename(variant_new = variant) |> 
+  select(variant_new, af, beta_CI, P_value)|> 
+  mutate(annotation="")
+
+# NO Recombination
+SNPGWAS_Fasttree_DP_noRecombination_sighits_df <- SNPGWAS_Fasttree_DP_noRecombination_sighits |> 
+  select(variant, af, beta_CI, P_value)|> 
+  mutate(POS= str_split(variant, "_", simplify = T)[,2], 
+         REF= str_split(variant, "_", simplify = T)[,3],
+         ALT= str_split(variant, "_", simplify = T)[,4], 
+         variant_new = paste0(REF, POS, ALT))
+  
+DBGWAS_Fasttree_DP_noRecombination_sighits_df <- left_join(DBGWAS_Fasttree_DP_noRecombination_sighits |> select(variant, af, beta_CI, P_value), 
+                                                           DBGWAS_Fasttree_DP_LMM_sighits_df |> select(variant, variant_new)) |> 
+  arrange(parse_number(variant_new))|>
+  mutate(variant_new = ifelse(is.na(variant_new), paste0("unitig_", 21:26, "*"), variant_new))|> 
+  arrange(parse_number(variant_new))
+  
+PanGWAS_Fasttree_DP_noRecombination_sighits_df <-  PanGWAS_Fasttree_DP_noRecombination_sighits|> 
+  rename(variant_new = variant) |> 
+  select(variant_new, af, beta_CI, P_value)|> 
+  mutate(annotation="")
+
+
+# Load annotations
+## SNPGWAS
+SNPGWAS_data_Fasttree_LMM_ann <- read.csv(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_LMM/SNP_annotations.csv"), header=F)
+colnames(SNPGWAS_data_Fasttree_LMM_ann) <- c("POS", "REF", "ALT", "FUNCLASS", "IMPACT", "gene", "nt_change", "aa_change")
+SNPGWAS_data_Fasttree_LMM_ann_df <- SNPGWAS_data_Fasttree_LMM_ann|>
+  mutate(variant_new = paste0(REF, POS,  ALT), 
+         aa_change = str_remove(aa_change, "p."), 
+         type= ifelse(IMPACT == "HIGH", "nonsense", 
+                      ifelse(IMPACT == "MODERATE", "missense", 
+                             ifelse(IMPACT == "LOW", "synonymous", "non-coding"))), 
+         annotation= paste0(type, " (", aa_change, "), gene:", gene))|>
+  select(variant_new, annotation)
+SNPGWAS_data_Fasttree_LMM_ann_df
+
+SNPGWAS_Fasttree_DP_LMM_sighits_df_final <- left_join(SNPGWAS_Fasttree_DP_LMM_sighits_df, SNPGWAS_data_Fasttree_LMM_ann_df)|> 
+  select(variant_new, af, beta_CI, P_value, annotation)
+
+SNPGWAS_Fasttree_DP_noRecombination_sighits_df_final <- left_join(SNPGWAS_Fasttree_DP_noRecombination_sighits_df, SNPGWAS_data_Fasttree_LMM_ann_df)|> 
+  select(variant_new, af, beta_CI, P_value, annotation)
+
+## DBGWAS- recombination 
+DBGWAS_FastTree_DP_LMM_ann <- read.delim(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_LMM/DBGWAS_annotation.txt"), sep = "\t", header=F) 
+colnames(DBGWAS_FastTree_DP_LMM_ann) <- colnames(DBGWAS_Fasttree_DP_LMM_data)
+DBGWAS_FastTree_annotations <- DBGWAS_FastTree_DP_LMM_ann |>
+  filter(af>0.05, af<0.95)|> 
+  mutate(core_accessory = ifelse(str_extract(notes, "^[^:]+")=="AP018935.1", "ref", "unaligned contig"),
+         coord_range = str_extract(notes, "(?<=:)[0-9]+-[0-9]+"), 
+         start= str_split(coord_range, "-", simplify = T)[,1], 
+         end= str_split(coord_range, "-", simplify = T)[,2]) |>
+  separate(
+    notes, 
+    into = c("contig_position", "upstream", "gene", "downstream"), 
+    sep = ";", 
+    remove = FALSE, 
+    fill = "right"
+  )|>
+  mutate(annotation= paste0("Coord:", start, "-", end, " (", core_accessory, "), gene:",gene))|>
+  select(variant, annotation)
+
+DBGWAS_Fasttree_DP_LMM_sighits_df_final <- left_join(DBGWAS_Fasttree_DP_LMM_sighits_df, DBGWAS_FastTree_annotations)|> 
+  select(variant_new, af, beta_CI, P_value, annotation)
+
+
+## DBGWAS- no recombination 
+DBGWAS_FastTree_DP_LMM_noRecombination_ann <- read.delim(paste0(path,"pyseer/Population_Structure_Methods/Fasttree_DP_noRecombination/DBGWAS_annotation.txt"), sep = "\t", header=F) 
+colnames(DBGWAS_FastTree_DP_LMM_noRecombination_ann) <- colnames(DBGWAS_Fasttree_DP_LMM_data)
+DBGWAS_FastTree_noRecombination_annotations <- DBGWAS_FastTree_DP_LMM_noRecombination_ann |>
+  filter(af>0.05, af<0.95)|> 
+  mutate(core_accessory = ifelse(str_extract(notes, "^[^:]+")=="AP018935.1", "ref", "unaligned contig"),
+         coord_range = str_extract(notes, "(?<=:)[0-9]+-[0-9]+"), 
+         start= str_split(coord_range, "-", simplify = T)[,1], 
+         end= str_split(coord_range, "-", simplify = T)[,2]) |>
+  separate(
+    notes, 
+    into = c("contig_position", "upstream", "gene", "downstream"), 
+    sep = ";", 
+    remove = FALSE, 
+    fill = "right"
+  )|>
+  mutate(annotation= paste0("Coord:", start, "-", end, " (", core_accessory, "), gene:",gene))|>
+  select(variant, annotation)
+
+DBGWAS_Fasttree_DP_noRecombination_sighits_df_final <- left_join(DBGWAS_Fasttree_DP_noRecombination_sighits_df, DBGWAS_FastTree_noRecombination_annotations)|> 
+  select(variant_new, af, beta_CI, P_value, annotation)
+
+
+
+# Make table for DP with RECOMBINATION
+Fasttree_DP_LMM_df <- rbind(SNPGWAS_Fasttree_DP_LMM_sighits_df_final, 
+      DBGWAS_Fasttree_DP_LMM_sighits_df_final, 
+      PanGWAS_Fasttree_DP_LMM_sighits_df)
+Fasttree_DP_LMM_df
+
+Fasttree_DP_LMM_noRecombination_df <- rbind(SNPGWAS_Fasttree_DP_noRecombination_sighits_df_final, 
+      DBGWAS_Fasttree_DP_noRecombination_sighits_df_final, 
+      PanGWAS_Fasttree_DP_noRecombination_sighits_df)
+Fasttree_DP_LMM_noRecombination_df
+```
+
+
+# Make supplementary figure for MS2: methods sensitivity analyses
+```{r}
+library(dplyr)
+library(openxlsx)
+
+wb <- createWorkbook()
+
+# CCs_FEM --------------------------------------------------------------
+snpgwas_CCs_FEM <- SNPGWAS_CC_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_CC_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "SNPGWAS CCs (FEM)")
+writeData(wb, "SNPGWAS CCs (FEM)", snpgwas_CCs_FEM)
+
+dbgwass_CCs_FEM <- DBGWAS_CC_data |>
+  filter(lrt.pvalue < 0.05 / 87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "DBGWAS CCs (FEM)")
+writeData(wb, "DBGWAS CCs (FEM)", dbgwass_CCs_FEM)
+
+pangwas_CCs_FEM <- PanGWAS_CC_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_CC_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "PanGWAS CCs (FEM)")
+writeData(wb, "PanGWAS CCs (FEM)", pangwas_CCs_FEM)
+
+# SCs_FEM --------------------------------------------------------------
+snpgwas_SCs_FEM <- SNPGWAS_SC_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_SC_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "SNPGWAS SCs (FEM)")
+writeData(wb, "SNPGWAS SCs (FEM)", snpgwas_SCs_FEM)
+
+dbgwass_SCs_FEM <- DBGWAS_SC_data |>
+  filter(lrt.pvalue < 0.05 / 87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "DBGWAS SCs (FEM)")
+writeData(wb, "DBGWAS SCs (FEM)", dbgwass_SCs_FEM)
+
+pangwas_SCs_FEM <- PanGWAS_SC_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_SC_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "PanGWAS SCs (FEM)")
+writeData(wb, "PanGWAS SCs (FEM)", pangwas_SCs_FEM)
+
+# Mash_dist_FEM --------------------------------------------------------
+snpgwas_mash_FEM <- SNPGWAS_mash_distances_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_mash_distances_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "SNPGWAS Mash dist (FEM)")
+writeData(wb, "SNPGWAS Mash dist (FEM)", snpgwas_mash_FEM)
+
+dbgwass_mash_FEM <- DBGWAS_mash_distances_data |>
+  filter(lrt.pvalue < 0.05 / 87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "DBGWAS Mash dist (FEM)")
+writeData(wb, "DBGWAS Mash dist (FEM)", dbgwass_mash_FEM)
+
+pangwas_mash_FEM <- PanGWAS_mash_distances_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_mash_distances_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "PanGWAS Mash dist (FEM)")
+writeData(wb, "PanGWAS Mash dist (FEM)", pangwas_mash_FEM)
+
+# RAxML_SNP_phylo_LMM --------------------------------------------------
+snpgwas_RAxml <- SNPGWAS_RAxML_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_RAxML_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "SNPGWAS RaxML (LMM)")
+writeData(wb, "SNPGWAS RaxML (LMM)", snpgwas_RAxml)
+
+dbgwass_RAxml <- DBGWAS_RAxML_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS RaxML (LMM)")
+writeData(wb, "DBGWAS RaxML (LMM)", dbgwass_RAxml)
+
+pangwas_RAxml <- PanGWAS_RAxML_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_RAxML_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS RaxML (LMM)")
+writeData(wb, "PanGWAS RaxML (LMM)", pangwas_RAxml)
+
+# IQtree_SNP_phylo_LMM -------------------------------------------------
+snpgwas_IQtree <- SNPGWAS_IQtree_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_IQtree_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "SNPGWAS IQtree (LMM)")
+writeData(wb, "SNPGWAS IQtree (LMM)", snpgwas_IQtree)
+
+dbgwass_IQtree <- DBGWAS_IQtree_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "DBGWAS IQtree (LMM)")
+writeData(wb, "DBGWAS IQtree (LMM)", dbgwass_IQtree)
+
+pangwas_IQtree <- PanGWAS_IQtree_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_IQtree_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS IQtree (LMM)")
+writeData(wb, "PanGWAS IQtree (LMM)", pangwas_IQtree)
+
+# Fasttree_SP_phylo_LMM -----------------------------------------------
+snpgwas_Fasttree_SP <- SNPGWAS_Fasttree_SP_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_Fasttree_SP_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "SNPGWAS FastTree SP (LMM)")
+writeData(wb, "SNPGWAS FastTree SP (LMM)", snpgwas_Fasttree_SP)
+
+dbgwass_Fasttree_SP <- DBGWAS_Fasttree_SP_data |>
+  filter(lrt.pvalue < 0.05 / 87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "DBGWAS FastTree SP (LMM)")
+writeData(wb, "DBGWAS FastTree SP (LMM)", dbgwass_Fasttree_SP)
+
+pangwas_Fasttree_SP <- PanGWAS_Fasttree_SP_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_SP_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS FastTree SP (LMM)")
+writeData(wb, "PanGWAS FastTree SP (LMM)", pangwas_Fasttree_SP)
+
+# Fasttree_DP_phylo_LMM -----------------------------------------------
+snpgwas_Fasttree_DP <- SNPGWAS_Fasttree_DP_LMM_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_Fasttree_DP_LMM_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "SNPGWAS FastTree DP (LMM)")
+writeData(wb, "SNPGWAS FastTree DP (LMM)", snpgwas_Fasttree_DP)
+
+dbgwass_Fasttree_DP <- DBGWAS_Fasttree_DP_LMM_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS FastTree DP (LMM)")
+writeData(wb, "DBGWAS FastTree DP (LMM)", dbgwass_Fasttree_DP)
+
+pangwas_Fasttree_DP <- PanGWAS_Fasttree_DP_LMM_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_LMM_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS FastTree DP (LMM)")
+writeData(wb, "PanGWAS FastTree DP (LMM)", pangwas_Fasttree_DP)
+
+# Fasttree_DP_phylo_FEM -----------------------------------------------
+snpgwas_Fasttree_DP_FEM <- SNPGWAS_Fasttree_DP_FEM_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_Fasttree_DP_FEM_data)) |>
+   select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "SNPGWAS FastTree DP (FEM)")
+writeData(wb, "SNPGWAS FastTree DP (FEM)", snpgwas_Fasttree_DP_FEM)
+
+dbgwass_Fasttree_DP_FEM <- DBGWAS_Fasttree_DP_FEM_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+   select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+
+addWorksheet(wb, "DBGWAS FastTree DP (FEM)")
+writeData(wb, "DBGWAS FastTree DP (FEM)", dbgwass_Fasttree_DP_FEM)
+
+pangwas_Fasttree_DP_FEM <- PanGWAS_Fasttree_DP_FEM_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_FEM_data)) |>
+   select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err, notes)
+
+addWorksheet(wb, "PanGWAS FastTree DP (FEM)")
+writeData(wb, "PanGWAS FastTree DP (FEM)", pangwas_Fasttree_DP_FEM)
+
+# SNP_kinship_LMM ----------------------------------------------
+snpgwas_SNP_kinship <- SNPGWAS_SNP_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_SNP_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+
+addWorksheet(wb, "SNPGWAS SNP kinship (LMM)")
+writeData(wb, "SNPGWAS SNP kinship (LMM)", snpgwas_SNP_kinship)
+
+dbgwass_SNP_kinship <- DBGWAS_SNP_kinship_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS SNP kinship (LMM)")
+writeData(wb, "DBGWAS SNP kinship (LMM)", dbgwass_SNP_kinship)
+
+pangwas_SNP_kinship <- PanGWAS_SNP_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_SNP_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS SNP kinship (LMM)")
+writeData(wb, "PanGWAS SNP kinship (LMM)", pangwas_SNP_kinship)
+
+# Unitig_kinship_LMM -------------------------------------------
+snpgwas_unitig_kinship <- SNPGWAS_Unitig_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_Unitig_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "SNPGWAS Unitig kinship (LMM)")
+writeData(wb, "SNPGWAS Unitig kinship (LMM)", snpgwas_unitig_kinship)
+
+dbgwass_unitig_kinship <- DBGWAS_Unitig_kinship_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS Unitig kinship (LMM)")
+writeData(wb, "DBGWAS Unitig kinship (LMM)", dbgwass_unitig_kinship)
+
+pangwas_unitig_kinship <- PanGWAS_Unitig_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Unitig_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS Unitig kinship (LMM)")
+writeData(wb, "PanGWAS Unitig kinship (LMM)", pangwas_unitig_kinship)
+
+# COG_kinship_LMM ----------------------------------------------
+snpgwas_COG_kinship <- SNPGWAS_COG_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_COG_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "SNPGWAS COG kinship (LMM)")
+writeData(wb, "SNPGWAS COG kinship (LMM)", snpgwas_COG_kinship)
+
+dbgwass_COG_kinship <- DBGWAS_COG_kinship_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS COG kinship (LMM)")
+writeData(wb, "DBGWAS COG kinship (LMM)", dbgwass_COG_kinship)
+
+pangwas_COG_kinship <- PanGWAS_COG_kinship_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_COG_kinship_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS COG kinship (LMM)")
+writeData(wb, "PanGWAS COG kinship (LMM)", pangwas_COG_kinship)
+
+# Recombination_free_Fasttree_DP_phylo_LMM ----------------------------
+snpgwas_gubbins <- SNPGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 / nrow(SNPGWAS_Fasttree_DP_noRecombination_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "SNPGWAS No recomb (LMM)")
+writeData(wb, "SNPGWAS No recomb (LMM)", snpgwas_gubbins)
+
+dbgwass_gubbins <- DBGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 /87899) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "DBGWAS No recomb (LMM)")
+writeData(wb, "DBGWAS No recomb (LMM)", dbgwass_gubbins)
+
+pangwas_gubbins <- PanGWAS_Fasttree_DP_noRecombination_data |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_Fasttree_DP_noRecombination_data)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS No recomb (LMM)")
+writeData(wb, "PanGWAS No recomb (LMM)", pangwas_gubbins)
+
+# Pangenome tools ------------------------------------------------------
+# Roary
+pangwas_Roary <- PanGWAS_ROARY |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_ROARY)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS Roary")
+writeData(wb, "PanGWAS Roary", pangwas_Roary)
+
+# Panaroo_CLARC
+pangwas_Panaroo_CLARC <- PanGWAS_PANAROO_CLARC |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_PANAROO_CLARC)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS Panaroo + CLARC")
+writeData(wb, "PanGWAS Panaroo + CLARC", pangwas_Panaroo_CLARC)
+
+# Roary_CLARC
+pangwas_Roary_CLARC <- PanGWAS_ROARY_CLARC |>
+  filter(lrt.pvalue < 0.05 / nrow(PanGWAS_ROARY_CLARC)) |>
+  select(variant, af, filter.pvalue, lrt.pvalue, beta, beta.std.err,variant_h2, notes)
+
+addWorksheet(wb, "PanGWAS Roary + CLARC")
+writeData(wb, "PanGWAS Roary + CLARC", pangwas_Roary_CLARC)
+
+# Finally save workbook ------------------------------------------------
+saveWorkbook(wb, paste0(outpath, "Supp_Pyseer_significant_outputs"), overwrite = TRUE)
+```
+
+
+
+
