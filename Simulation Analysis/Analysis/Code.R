@@ -24,7 +24,7 @@ homoplasy_results <- read.delim(
   mutate(variant = paste("AP018935.1", POS, REF, ALT, sep = "_"))
 
 SNPGWAS_data <- read.table(
-  paste0(path, "Empirical Analysis/inputs/SNPGWAS.txt"),
+  paste0(path, "Empirical Analysis/inputs/pyseer/Population_Structure_Methods/FastTree_DP_LMM/SNPGWAS.txt"),
   sep = "\t", header = TRUE
 ) |>
   mutate(
@@ -174,6 +174,19 @@ colnames(sim_results_raw) <- c("AF_range", "MUT", "EOD_LOD_ratio", "simulation",
                                "correction", "variant", "af", "filter-pvalue",
                                "lrt-pvalue", "beta", "beta-std-err")
 
+# ── Data loading and processing ──────────────────────────────────
+sim_results_raw_highfreq <- read.delim(
+  paste0(path, "Simulation Analysis/Analysis/inputs/sim_GWAS_results_set1_highfreq.txt"),
+  header = FALSE
+)
+
+colnames(sim_results_raw_highfreq) <- c("AF_range", "MUT", "EOD_LOD_ratio", "simulation",
+                               "correction", "variant", "af", "filter-pvalue",
+                               "lrt-pvalue", "beta", "beta-std-err")
+
+
+sim_results_raw_full <-rbind(sim_results_raw, sim_results_raw_highfreq)
+
 
 # ── Method and EOD:LOD factor levels ────────────────────────────
 method_levels <- c("CC", "SC", "Mash distances",
@@ -184,7 +197,7 @@ method_levels <- c("CC", "SC", "Mash distances",
 
 ratio_levels <- c("1:2", "1:3", "2:1", "3:1")
 
-sim_results <- as_tibble(sim_results_raw) |>
+sim_results <- as_tibble(sim_results_raw_full) |>
   filter(AF_range != "freq") |>
   mutate(
     EOD_ratio = as.numeric(sapply(strsplit(EOD_LOD_ratio, ":"), "[", 1)),
@@ -366,9 +379,10 @@ Figure5 <- p1 + p2 + plot_layout(guides = "collect") +
     title   = "GWAS detection power by allele frequency and effect size",
     theme   = theme(plot.title = element_text(face = "bold", size = 14))
   )
+Figure5
 
-# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure5.tiff"),plot = Figure5, width = 15, height = 7, dpi = 300)
-# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure5.png"),plot = Figure5, width = 15, height = 7, dpi = 300)
+ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure5.tiff"),plot = Figure5, width = 20, height = 7, dpi = 300)
+ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure5.png"),plot = Figure5, width = 20, height = 7, dpi = 300)
 
 
 # ── Figure 6 : overall power heatmap  - Homoplasy Index ─────────────────────────────
@@ -533,8 +547,8 @@ Figure8 <- p1 + p2 +
   )
 Figure8
 
-# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure8.tiff"),plot = Figure8, width = 14, height = 10, dpi = 300)
-# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure8.png"),plot = Figure8, width = 14, height = 10, dpi = 300)
+# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure8.tiff"),plot = Figure8, width = 20, height = 10, dpi = 300)
+# ggsave(paste0(path, "Simulation Analysis/Analysis/outputs/Figure8.png"),plot = Figure8, width = 20, height = 10, dpi = 300)
 
 #########################
 #  Set 2 - Figures 9-11 #
