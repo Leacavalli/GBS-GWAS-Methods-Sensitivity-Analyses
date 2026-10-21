@@ -3,8 +3,13 @@
 # population structure correction methods (pyseer on simulated phenotypes)
 #
 # Set 1 SNPs: range of allele frequencies (positive-control power simulations)
-# Set 2 SNPs: range of homoplasy indices (HI)
-# Permuted sets: null simulations (phenotype permutation)
+# Set 2 SNPs: range of allele frequencies x homoplasy indices (HI)
+# Null sets: permuted phenotypes
+#
+# Inputs (in simulation_analysis/inputs/):
+#   pyseer_power_set1_AF.txt, pyseer_power_set2_AFxHI.txt,
+#   pyseer_null_set1_AF.txt,  pyseer_null_set2_AFxHI.txt,
+#   homoplasy_index_per_SNP.tsv
 #
 # Generates (in simulation_analysis/outputs/):
 #   Figure_3_Power_by_EOD_LOD_ratio_and_AF_set1.tiff
@@ -120,9 +125,8 @@ HI_bin_from_HI <- function(HI) {
 }
 
 read_sim <- function(file, cols) {
-  df <- read.delim(file.path(path, file), header = FALSE)
-  df <- df[df$V1 != "freq", ]   # drop header line
-  colnames(df) <- cols
+  df <- read.delim(file.path(path, file), header = TRUE, colClasses = "character")
+  colnames(df) <- cols   # internal column names used below
   as_tibble(df) |> mutate(af = as.numeric(af), `lrt-pvalue` = as.numeric(`lrt-pvalue`),
                           beta = as.numeric(beta))
 }
@@ -148,7 +152,7 @@ power_heatmap <- function(df, x, y, fill, legend_name, title, subtitle, y_labels
 # 1. LOAD DATA ------------------------------------------------------------------
 
 ## Homoplasy index of every SNP in the empirical VCF
-homoplasy_results <- read.delim(file.path(path, "homoplasy_results_SNPs.tsv")) |>
+homoplasy_results <- read.delim(file.path(path, "homoplasy_index_per_SNP.tsv")) |>
   mutate(variant = paste("AP018935.1", POS, REF, ALT, sep = "_"))
 
 ## Allele frequencies from the empirical SNP-GWAS (FastTree DP LMM)
@@ -157,8 +161,7 @@ SNPGWAS_data <- read.table(
   sep = "\t", header = TRUE)
 
 ## Set 1: power simulations across allele frequencies
-sim_results <- bind_rows(read_sim("sim_GWAS_results_set1.txt", cols_set1),
-                         read_sim("sim_GWAS_results_set1_highfreq.txt", cols_set1)) |>
+sim_results <- read_sim("pyseer_power_set1_AF.txt", cols_set1) |>
   mutate(EOD_ratio = as.numeric(str_split_fixed(EOD_LOD_ratio, ":", 2)[, 1]),
          LOD_ratio = as.numeric(str_split_fixed(EOD_LOD_ratio, ":", 2)[, 2]),
          EOD_1 = round(af * (N_EOD + N_LOD) * (EOD_ratio / (EOD_ratio + LOD_ratio))),
@@ -175,7 +178,7 @@ sim_results <- bind_rows(read_sim("sim_GWAS_results_set1.txt", cols_set1),
                                     "[0.80, 0.90)", "[0.90, 1.00]")))
 
 ## Set 2: power simulations across homoplasy indices
-sim_results_set2 <- read_sim("sim_GWAS_results_set2.txt", cols_set2) |>
+sim_results_set2 <- read_sim("pyseer_power_set2_AFxHI.txt", cols_set2) |>
   left_join(homoplasy_results |> select(variant, HI), by = "variant") |>
   add_sig() |>
   recode_correction() |>
@@ -188,11 +191,11 @@ sim_results_set2 <- read_sim("sim_GWAS_results_set2.txt", cols_set2) |>
                                             "[0.70, 0.80)", "[0.80, 0.90)", "[0.90, 1.00]")))
 
 ## Null (permuted) simulations
-sim_results_set1_null <- read_sim("sim_GWAS_results_set1_permuted.txt", cols_set1) |>
+sim_results_set1_null <- read_sim("pyseer_null_set1_AF.txt", cols_set1) |>
   add_sig() |>
   recode_correction()
 
-sim_results_set2_null <- read_sim("sim_GWAS_results_set2_permuted.txt", cols_set2) |>
+sim_results_set2_null <- read_sim("pyseer_null_set2_AFxHI.txt", cols_set2) |>
   add_sig() |>
   recode_correction() |>
   left_join(homoplasy_results |> select(variant, HI), by = "variant") |>
@@ -353,6 +356,7 @@ save_tiff(FigureS6, "Figure_S6_Power_by_HI_set1.tiff", width = 8, height = 5)
 
 # 7. FIGURE S7: ALLELE FREQUENCY DISTRIBUTION BY HI BIN, SET 1 ------------------
 
+set.seed(2024)   # reproducible jitter
 n_per_hibin <- sim_results |> group_by(HI_bin) |> summarise(n_snps = n_distinct(MUT), .groups = "drop")
 
 FigureS7 <- sim_results |>

@@ -21,11 +21,41 @@ empirical_analysis/
       pangenome_methods/               # PanGWAS with Roary, Roary+CLARC, Panaroo+CLARC
   outputs/
 simulation_analysis/
-  simulation_code/                     # SLURM scripts: homoplasy index + simulated phenotypes (see README there)
-  analysis_code/simulation_analysis.R  # Figures 3–5, Table 2, Figures S1–S2, S5–S10
-  inputs/                              # compiled pyseer results on simulated / permuted phenotypes, homoplasy index
+  simulation_code/
+    01_compute_homoplasy_index.sh          # homoplasy index (Fitch parsimony on FastTree DP tree) for every SNP
+    02_simulate_phenotypes_set1_AF.sh      # Set 1 phenotypes: 10 SNPs per AF bin (5–95%) x 4 EOD:LOD ratios x 20 sims
+    03_simulate_phenotypes_set2_AF_x_HI.sh # Set 2 phenotypes: 3 SNPs per AF bin x HI bin x 4 EOD:LOD ratios x 20 sims
+  analysis_code/simulation_analysis.R      # Figures 3–5, Table 2, Figures S1–S2, S5–S10
+  inputs/
+    homoplasy_index_per_SNP.tsv            # output of 01_compute_homoplasy_index.sh
+    pyseer_power_set1_AF.txt               # pyseer results, Set 1 power simulations (AF 0.05–0.85)
+    pyseer_power_set2_AFxHI.txt            # pyseer results, Set 2 power simulations
+    pyseer_null_set1_AF.txt                # pyseer results, Set 1 SNPs with permuted (null) phenotypes
+    pyseer_null_set2_AFxHI.txt             # pyseer results, Set 2 SNPs with permuted (null) phenotypes
   outputs/
 ```
+
+### Simulation inputs
+
+Each row of the `pyseer_*` files is one pyseer test: one SNP, in one simulated phenotype, under one of the 13 population structure correction methods.
+
+| Column | Meaning |
+|---|---|
+| `AF_bin` | Target allele-frequency bin |
+| `HI_bin` | Homoplasy index bin (Set 2 only) |
+| `SNP` | Simulated causal SNP |
+| `EOD_LOD_ratio` | EOD:LOD ratio among carriers (`ratio_null` for permuted phenotypes) |
+| `simulation` | Replicate (1–20) |
+| `correction` | Correction method |
+| `variant`, `af`, `filter_pvalue`, `lrt_pvalue`, `beta`, `beta_std_err` | pyseer output |
+
+Every phenotype has the observed totals of 623 EOD and 917 LOD. EOD:LOD ratios that would need more cases than that are not simulated:
+- 3:1 above AF ≈ 0.54
+- 2:1 above ≈ 0.61
+- 1:3 above ≈ 0.79
+- 1:2 above ≈ 0.89
+
+This is why the Set 1 power results stop at AF 0.85, and why the higher AF bins contain fewer ratios. Rows with empty pyseer columns are tests where pyseer returned no result; they are counted as non-significant.
 
 ## Reproducing the figures and tables
 

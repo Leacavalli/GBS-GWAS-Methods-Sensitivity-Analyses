@@ -1,4 +1,4 @@
-freq	MUT	ratio	sim	correction	value
+AF_bin	HI_bin	SNP	EOD_LOD_ratio	simulation	correction	variant	af	filter_pvalue	lrt_pvalue	beta	beta_std_err
 0.05	45_55	AP018935.1_58940_A_G	1:2	1	CC	AP018935.1_58940_A_G	7.61E-02	6.31E-02	1.00E+00	-1.27E-01	5.00E+00
 0.05	45_55	AP018935.1_58940_A_G	1:2	1	COG_kinship	AP018935.1_58940_A_G	7.47E-02	9.23E-02	9.24E-02	8.01E-02	4.76E-02
 0.05	45_55	AP018935.1_58940_A_G	1:2	1	FasttreeDP_FEM	AP018935.1_58940_A_G	7.47E-02	9.23E-02	8.87E-02	3.44E-01	2.05E-01
