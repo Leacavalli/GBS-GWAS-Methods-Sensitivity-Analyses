@@ -1,0 +1,13 @@
+"Method","Model","SNP-GWAS","PanGWAS","DBGWAS"
+"CC","FEM",861,103,4851
+"SC","FEM",45,10,124
+"Mash distances","FEM",10,10,36
+"SNP-based kinship matrix","LMM",0,1,0
+"Unitig-based kinship matrix","LMM",1,2,3
+"COG-based kinship matrix","LMM",6,2,52
+"SNP-based Phylogeny (RAxML-NG)","LMM",2137,86,6045
+"SNP-based Phylogeny (IQ-TREE)","LMM",449,51,2012
+"Whole Genome Phylogeny (FastTree SP)","LMM",10,2,96
+"Whole Genome Phylogeny (FastTree DP)","FEM",12,10,46
+"Whole Genome Phylogeny (FastTree DP)","LMM",5,2,20
+"Recombination-free Whole Genome Phylogeny (FastTree DP)","LMM",6,2,13

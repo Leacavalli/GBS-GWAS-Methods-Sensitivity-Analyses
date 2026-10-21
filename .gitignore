@@ -1,0 +1,12 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# R / RStudio
+.Rhistory
+.RData
+.Rproj.user/
+
+# Scratch
+tmp/
+~$*
