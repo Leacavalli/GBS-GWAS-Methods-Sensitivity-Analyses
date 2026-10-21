@@ -25,6 +25,7 @@ simulation_analysis/
     01_compute_homoplasy_index.sh          # homoplasy index (Fitch parsimony on FastTree DP tree) for every SNP
     02_simulate_phenotypes_set1_AF.sh      # Set 1 phenotypes: 10 SNPs per AF bin (5–95%) x 4 EOD:LOD ratios x 20 sims
     03_simulate_phenotypes_set2_AF_x_HI.sh # Set 2 phenotypes: 3 SNPs per AF bin x HI bin x 4 EOD:LOD ratios x 20 sims
+    04_simulate_phenotypes_null.sh         # Null phenotypes: 20 random permutations of the observed EOD/LOD labels per Set 1 / Set 2 SNP
   analysis_code/simulation_analysis.R      # Figures 3–5, Table 2, Figures S1–S2, S5–S10
   inputs/
     homoplasy_index_per_SNP.tsv            # output of 01_compute_homoplasy_index.sh
